@@ -28,6 +28,11 @@ public class ConsoleHelper {
         this.console = console;
     }
 
+    /**
+     * Starting main loop of the console
+     *
+     * @throws IOException
+     */
     public void start() throws IOException {
         currentPath = Paths.get("").toAbsolutePath();
 
