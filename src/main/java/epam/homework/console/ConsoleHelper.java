@@ -22,18 +22,19 @@ public class ConsoleHelper {
     public static final String CD_PARENT = "..";
 
     private Console console;
-    private String currentDirectory = Paths.get("").toAbsolutePath().toString();
-
+    private Path currentPath;
 
     public ConsoleHelper(Console console) {
         this.console = console;
     }
 
     public void start() throws IOException {
+        currentPath = Paths.get("").toAbsolutePath();
+
         String promptCommand = PROMPT_RESET;
         String cmd;
         do {
-            System.out.print(SHELL_NAME + " " + getPrompt(promptCommand, getCurrentDirectory()) + ">");
+            System.out.print(SHELL_NAME + " " + getPrompt(promptCommand) + ">");
             cmd = console.readLine();
             String[] commandArray = cmd.trim().split("\\s+", 2);
 
@@ -43,11 +44,11 @@ public class ConsoleHelper {
                     break;
 
                 case CMD_DIR:
-                    displayDirContent(getCurrentDirectory());
+                    displayDirContent();
                     break;
 
                 case CMD_TREE:
-                    displayDirTree(getCurrentDirectory());
+                    displayDirTree();
                     break;
 
                 case CMD_CD:
@@ -77,22 +78,21 @@ public class ConsoleHelper {
 
     private void changeDirectory(String command) {
         if (CD_PARENT.equals(command)) {
-            Path path = Paths.get(currentDirectory).getParent();
-            currentDirectory = path.toString();
+            currentPath = currentPath.getParent();
         } else {
-            Path path = Paths.get(currentDirectory, command);
+            Path path = currentPath.resolve(command);
             if (Files.exists(path)) {
-                currentDirectory = path.toString();
+                currentPath = path;
             } else {
                 System.out.println(path + " : does not exist");
             }
         }
     }
 
-    private void displayDirContent(String currentPath) throws IOException {
-        System.out.println("Content of " + currentPath);
+    private void displayDirContent() throws IOException {
+        System.out.println("Content of " + currentPath.toString());
 
-        try (DirectoryStream<Path> paths = Files.newDirectoryStream(Paths.get(currentPath))) {
+        try (DirectoryStream<Path> paths = Files.newDirectoryStream(currentPath)) {
             for (Path path : paths) {
                 if (Files.isRegularFile(path)) {
                     System.out.print("FILE   ");
@@ -104,10 +104,10 @@ public class ConsoleHelper {
         }
     }
 
-    private void displayDirTree(String path) throws IOException {
-        int startLevel = Paths.get(path).getNameCount();
+    private void displayDirTree() throws IOException {
+        int startLevel = currentPath.getNameCount();
 
-        Files.walk(Paths.get(path)).forEach(filePath -> {
+        Files.walk(currentPath).forEach(filePath -> {
             if (Files.isDirectory(filePath)) {
                 System.out.println(getIndentationString(filePath.getNameCount() - startLevel) + filePath.getFileName());
             }
@@ -122,10 +122,10 @@ public class ConsoleHelper {
         return "";
     }
 
-    private String getPrompt(String promptCommand, String currentPath) {
+    private String getPrompt(String promptCommand) {
         switch (promptCommand) {
             case PROMPT_$CWD:
-                return currentPath;
+                return currentPath.toString();
 
             case PROMPT_RESET:
                 return PROMPT_DEFAULT;
@@ -140,9 +140,5 @@ public class ConsoleHelper {
             indentChar += INDENTATION_CHARACTER;
         }
         return indentChar;
-    }
-
-    private String getCurrentDirectory() {
-        return currentDirectory;
     }
 }
